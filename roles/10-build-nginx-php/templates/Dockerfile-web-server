@@ -1,0 +1,15 @@
+FROM debian:latest
+ 
+MAINTAINER Dusenko Nick <i.see@mail.ru>
+ 
+ENV TZ=Europe/Moscow
+ 
+RUN apt update
+RUN apt install -y nginx php php-fpm php-mysqli
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+RUN mkdir /run/php
+
+ 
+CMD php-fpm7.4 -c /etc/php/7.4/fpm/php-fpm.conf -D ; nginx
+ 
+EXPOSE 80

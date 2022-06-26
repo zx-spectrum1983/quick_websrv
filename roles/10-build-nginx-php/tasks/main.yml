@@ -1,0 +1,63 @@
+---
+
+  - name: Создаем каталоги для веб-сервера
+    file:
+      path: "{{item}}"
+      state: directory
+      mode: '0755'
+    loop:
+      - "/opt/quicksrv"
+      - "/opt/quicksrv/html"
+      - "/opt/quicksrv/conf"
+      - "/opt/quicksrv/log"
+
+  - name: Копируем Dockerfile
+    template:
+      src: Dockerfile-web-server
+      dest: /opt/quicksrv/Dockerfile
+    register: dockerfile_status
+
+  - name: Копируем index.php
+    copy:
+      src: index.php
+      dest: /opt/quicksrv/html/index.php
+
+  - name: Копируем nginx conf
+    copy:
+      src: quicksrv.conf
+      dest: /opt/quicksrv/conf/default
+
+  - name: Копируем systemd unit
+    template:
+      src: docker.quicksrv.service
+      dest: /etc/systemd/system/docker.quicksrv.service
+    register: systemdunit_status
+
+  - name: Если необходимо собрать новый образ или поменялся конфиг systemd unit выполняем этот блок
+    block:
+    - name: Останавливаем предыдущий контейнер
+      service:
+        name: docker.quicksrv
+        state: stopped
+    - name: Удаляем предыдущий образ контейнера
+      docker_image:
+        state: absent
+        name: quicksrv
+        tag: latest
+    - name: Создаем новый образ nginx + php
+      docker_image:
+        name: quicksrv
+        build:
+          path: /opt/quicksrv
+        state: present
+    when: dockerfile_status.changed or systemdunit_status.changed
+
+  - name: Запускаем контейнер
+    service:
+      name: docker.quicksrv
+      daemon_reload: yes
+      state: started
+
+
+
+  

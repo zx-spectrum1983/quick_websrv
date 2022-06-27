@@ -1,0 +1,30 @@
+---
+
+  - name: Создаем volume для хранения баз данных
+    docker_volume:
+      name: mariadb
+
+  - name: Проверим создавалась ли база ранее
+    find:
+      path: /var/lib/docker/volumes/mariadb/_data/
+    register: dbfound
+
+  - name: Инициализируем базу
+    block:
+    - name: Запускаем контейнер для инициализации базы
+      docker_container:
+        name: maria_db
+        image: mariadb
+        env:
+          MARIADB_ROOT_PASSWORD: "{{dbroot}}"
+          MARIADB_DATABASE     : "{{dbname}}"
+          MARIADB_USER         : "{{dbuser}}"
+          MARIADB_PASSWORD     : "{{dbpass}}"
+        volumes:
+          - mariadb:/var/lib/mysql
+    - name: Останавливаем контейнер
+      docker_container:
+        name: maria_db
+        state: absent
+    when: dbfound.examined == 0
+

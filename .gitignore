@@ -1,3 +1,4 @@
 .gitsecret/keys/random_seed
 !*.secret
 inventory/hosts.ini
+roles/10-build-mariadb/vars/main.yml
